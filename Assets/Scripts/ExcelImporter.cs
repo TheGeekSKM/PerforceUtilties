@@ -38,11 +38,6 @@ public class ExcelImporter : MonoBehaviour
                 statusLabel.text = $"Success! Converted to:\n{outputCsvPath}";
                 UIManager.Instance.AddLog($"Successfully converted and saved to {outputCsvPath}");
             }
-            else
-            {
-                statusLabel.text = "Conversion failed.";
-                UIManager.Instance.AddLog("Conversion failed.", true);
-            }
         }
         else
         {
@@ -58,10 +53,7 @@ public class ExcelImporter : MonoBehaviour
             var fileInfo = new FileInfo(excelPath);
             using (var package = new ExcelPackage(fileInfo))
             {
-                var worksheet = package.Workbook.Worksheets[0]; 
-                
-                // --- Validation Step: Check for required headers in Row 2 ---
-                // Columns: A=Department, B=First, C=Last, D=Email
+                var worksheet = package.Workbook.Worksheets[0];
                 
                 if (worksheet.Cells[2, 2].Value?.ToString() != "First" || 
                     worksheet.Cells[2, 3].Value?.ToString() != "Last"  ||
@@ -74,24 +66,22 @@ public class ExcelImporter : MonoBehaviour
                 }
                 
                 var csvBuilder = new StringBuilder();
-                csvBuilder.AppendLine("FirstName,LastName,Email"); 
+                csvBuilder.AppendLine("FirstName,LastName,Email,Password"); 
                 
                 for (int row = 3; row <= worksheet.Dimension.Rows; row++)
                 {
-                    // Column B (First Name)
                     string firstName = worksheet.Cells[row, 2].Value?.ToString() ?? "";
-                    // Column C (Last Name)
                     string lastName = worksheet.Cells[row, 3].Value?.ToString() ?? "";
-                    // Column D (Email)
                     string email = worksheet.Cells[row, 4].Value?.ToString() ?? "";
                     
                     if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) || string.IsNullOrWhiteSpace(email))
                     {
-                        UIManager.Instance.AddLog($"Skipping row {row} due to missing data.", true);
                         continue;
                     }
                     
-                    csvBuilder.AppendLine($"{firstName.Trim()},{lastName.Trim()},{email.Trim()}");
+                    string password = GenerateRandomPassword();
+
+                    csvBuilder.AppendLine($"{firstName.Trim()},{lastName.Trim()},{email.Trim()},{password}");
                 }
                 
                 File.WriteAllText(csvPath, csvBuilder.ToString());
@@ -104,5 +94,17 @@ public class ExcelImporter : MonoBehaviour
             UIManager.Instance.AddLog($"Excel Conversion Error: {ex.Message}", true);
             return false;
         }
+    }
+
+    private string GenerateRandomPassword(int length = 12)
+    {
+        const string validChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%";
+        var sb = new StringBuilder();
+        var random = new System.Random();
+        for (int i = 0; i < length; i++)
+        {
+            sb.Append(validChars[random.Next(validChars.Length)]);
+        }
+        return sb.ToString();
     }
 }

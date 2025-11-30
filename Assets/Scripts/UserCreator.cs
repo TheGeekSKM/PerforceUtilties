@@ -12,6 +12,7 @@ public class UserCreator : MonoBehaviour
         public string FirstName;
         public string LastName;
         public string Email;
+        public string Password; 
     }
 
     [Header("UI References")]
@@ -35,7 +36,6 @@ public class UserCreator : MonoBehaviour
 
     void Start()
     {
-        // Hook up buttons
         loadCSVButton.onClick.AddListener(OnLoadCSV);
         continueButton.onClick.AddListener(OnContinue);
         skipButton.onClick.AddListener(OnSkip);
@@ -44,7 +44,6 @@ public class UserCreator : MonoBehaviour
         csvPath = Path.Combine(Application.persistentDataPath, "perforce_users.csv");
         
         UIManager.Instance.AddLog($"Ready. Will load from {csvPath}.");
-        
         SetDisplayActive(false);
     }
 
@@ -52,7 +51,7 @@ public class UserCreator : MonoBehaviour
     {
         if (!File.Exists(csvPath))
         {
-            UIManager.Instance.AddLog("CSV file not found. Please run the Excel Importer first.", true);
+            UIManager.Instance.AddLog("CSV file not found. Run Importer.", true);
             return;
         }
 
@@ -62,7 +61,6 @@ public class UserCreator : MonoBehaviour
         try
         {
             var lines = File.ReadAllLines(csvPath);
-            // Skip the header (line 0)
             for (int i = 1; i < lines.Length; i++)
             {
                 if (string.IsNullOrWhiteSpace(lines[i])) continue;
@@ -70,12 +68,20 @@ public class UserCreator : MonoBehaviour
                 var parts = lines[i].Split(',');
                 if (parts.Length < 3) continue; 
 
-                usersToCreate.Add(new UserData
+                var userData = new UserData
                 {
                     FirstName = parts[0].Trim(),
                     LastName = parts[1].Trim(),
                     Email = parts[2].Trim()
-                });
+                };
+
+                // Check for Password column (index 3)
+                if (parts.Length >= 4)
+                {
+                    userData.Password = parts[3].Trim();
+                }
+
+                usersToCreate.Add(userData);
             }
             
             UIManager.Instance.AddLog($"Loaded {usersToCreate.Count} users.");
@@ -103,7 +109,9 @@ public class UserCreator : MonoBehaviour
         
         string genUsername = $"{currentUser.FirstName}{currentUser.LastName}".Replace(" ", "");
         string genFullName = $"{currentUser.FirstName} {currentUser.LastName}";
-        string genPassword = GenerateRandomPassword();
+        
+        // Use stored password if available, otherwise fallback to generator
+        string genPassword = !string.IsNullOrEmpty(currentUser.Password) ? currentUser.Password : GenerateRandomPassword();
         
         usernameInput.text = genUsername;
         fullNameInput.text = genFullName;
@@ -111,14 +119,12 @@ public class UserCreator : MonoBehaviour
         passwordInput.text = genPassword;
         
         SetFieldsInteractable(false);
-        UIManager.Instance.AddLog($"Preparing user: {genUsername} ({currentUserIndex + 1}/{usersToCreate.Count})");
     }
 
     private void OnEdit()
     {
         SetFieldsInteractable(true);
-        UIManager.Instance.AddLog("Edit mode enabled. Fields are now writable.");
-        
+        UIManager.Instance.AddLog("Edit mode enabled.");
         usernameInput.Select(); 
     }
 
@@ -139,12 +145,13 @@ public class UserCreator : MonoBehaviour
 
         if(string.IsNullOrEmpty(finalUsername) || string.IsNullOrEmpty(finalPassword))
         {
-            UIManager.Instance.AddLog("Username and Password cannot be empty.", true);
-            return;
+             UIManager.Instance.AddLog("Username and Password cannot be empty.", true);
+             return;
         }
 
         UIManager.Instance.AddLog($"Creating user: {finalUsername}...");
 
+        // 1. User Spec
         var userSpec = new StringBuilder();
         userSpec.AppendLine($"User: {finalUsername}");
         userSpec.AppendLine($"FullName: {finalFullName}");
@@ -153,30 +160,22 @@ public class UserCreator : MonoBehaviour
         
         var (userOut, userErr) = P4.RunCommand("user -i", userSpec.ToString());
         if (!string.IsNullOrEmpty(userErr))
-        {
             UIManager.Instance.AddLog($"Failed to create user {finalUsername}: {userErr}", true);
-        }
         else
-        {
             UIManager.Instance.AddLog($"User {finalUsername} created.");
-        }
         
+        // 2. Set Password
         string passwordInputStr = $"{finalPassword}\n{finalPassword}\n";
         var (passOut, passErr) = P4.RunCommand($"passwd -u {finalUsername}", passwordInputStr);
         if (!string.IsNullOrEmpty(passErr))
-        {
             UIManager.Instance.AddLog($"Failed to set password: {passErr}", true);
-        }
 
+        // 3. Add to Group
         var (groupOut, groupErr) = P4.RunCommand($"group -a -u {finalUsername} {groupName}");
         if (!string.IsNullOrEmpty(groupErr))
-        {
             UIManager.Instance.AddLog($"Failed to add to group: {groupErr}", true);
-        }
         else
-        {
             UIManager.Instance.AddLog($"Added to group {groupName}.");
-        }
 
         currentUserIndex++;
         DisplayCurrentUser();
@@ -185,17 +184,14 @@ public class UserCreator : MonoBehaviour
     private void OnSkip()
     {
         if (currentUserIndex < 0 || currentUserIndex >= usersToCreate.Count) return;
-        
         UIManager.Instance.AddLog($"Skipped user: {usernameInput.text}");
-        
         currentUserIndex++;
         DisplayCurrentUser();
     }
     
-
     private void SetDisplayActive(bool isActive)
     {
-        SetFieldsInteractable(isActive);
+        usernameInput.transform.parent.gameObject.SetActive(isActive);
         
         continueButton.interactable = isActive;
         skipButton.interactable = isActive;
