@@ -21,6 +21,8 @@ public class UserDeleter : MonoBehaviour
     [Space(10)]
     public GameObject userDisplayGroup; 
     public TextMeshProUGUI confirmationLabel; 
+    public TextMeshProUGUI fullNameLabel;     
+    public TextMeshProUGUI emailLabel;        
     
     public Button deleteButton;
     public Button skipButton;
@@ -66,37 +68,24 @@ public class UserDeleter : MonoBehaviour
 
             var userDetail = new P4UserDetail();
             
-            // P4 'users' format is: "username <email> (FullName) accessed..."
-
             int firstSpace = line.IndexOf(' ');
             if (firstSpace > 0) userDetail.Username = line.Substring(0, firstSpace);
 
             int emailStart = line.IndexOf('<');
             int emailEnd = line.IndexOf('>');
-            if (emailStart > -1 && emailEnd > emailStart) 
-            {
+            if (emailStart > -1 && emailEnd > emailStart)
                 userDetail.Email = line.Substring(emailStart + 1, emailEnd - emailStart - 1);
-            }
             else
-            {
-                userDetail.Email = "Unknown Email"; 
-            }
+                userDetail.Email = "Unknown Email";
             
             int nameStart = line.IndexOf('(');
             int nameEnd = line.IndexOf(')');
             if (nameStart > -1 && nameEnd > nameStart)
-            {
                 userDetail.FullName = line.Substring(nameStart + 1, nameEnd - nameStart - 1);
-            }
             else
-            {
                 userDetail.FullName = "Unknown Name";
-            }
             
-            if (!string.IsNullOrEmpty(userDetail.Username))
-            {
-                usersToDelete.Add(userDetail);
-            }
+            if (!string.IsNullOrEmpty(userDetail.Username)) usersToDelete.Add(userDetail);
         }
         
         if (usersToDelete.Count > 0)
@@ -125,7 +114,9 @@ public class UserDeleter : MonoBehaviour
         
         P4UserDetail user = usersToDelete[currentUserIndex];
         
-        confirmationLabel.text = $"Do you want to delete {user.Username}?\n<size=20>Full Name: {user.FullName}\nEmail: {user.Email}</size>";
+        confirmationLabel.text = $"Do you want to delete {user.Username}?";
+        fullNameLabel.text = $"Full Name: {user.FullName}";
+        emailLabel.text = $"Email: {user.Email}";
     }
 
     private void OnDelete()
@@ -137,6 +128,8 @@ public class UserDeleter : MonoBehaviour
 
         UIManager.Instance.AddLog($"Deleting user: {username}...");
         
+        P4.LogMockEvent($"Deleting user {username}...");
+
         var (output, error) = P4.RunCommand($"user -d -f {username}");
         
         if (!string.IsNullOrEmpty(error))
@@ -146,7 +139,7 @@ public class UserDeleter : MonoBehaviour
         else
         {
             UIManager.Instance.AddLog($"Successfully deleted {username}.");
-            deletedUsersLog.Add(user); // Add the full detail object to the log
+            deletedUsersLog.Add(user); 
         }
 
         currentUserIndex++;
@@ -166,7 +159,6 @@ public class UserDeleter : MonoBehaviour
     {
         string logPath = Path.Combine(Application.persistentDataPath, "deleted_users_log.csv");
         var csvBuilder = new StringBuilder();
-        // Updated header to include all details
         csvBuilder.AppendLine("Username,FullName,Email"); 
         
         foreach (var user in deletedUsersLog)
