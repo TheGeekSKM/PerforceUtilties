@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using UnityEngine;
+using System.Text;
 
 public static class P4
 {
@@ -18,30 +19,45 @@ public static class P4
             {
                 MockLogPath = Path.Combine(Application.persistentDataPath, "p4_mock_log.txt");
             }
-            try { File.AppendAllText(MockLogPath, $"\n{message}\n"); } catch {}
+                
+            try 
+            { 
+                File.AppendAllText(MockLogPath, $"\n{message}\n"); 
+            } 
+            catch {}
         }
     }
 
     public static (string Output, string Error) RunCommand(string arguments, string input = null)
     {
+        
         if (IsMockMode)
         {
             if (string.IsNullOrEmpty(MockLogPath))
             {
                 MockLogPath = Path.Combine(Application.persistentDataPath, "p4_mock_log.txt");
             }
+                
 
             string logEntry = $"Command: p4 {arguments}\n";
             if (input != null) logEntry += $"Input Data:\n{input}\n";
             logEntry += "--------------------\n";
 
-            try { File.AppendAllText(MockLogPath, logEntry); }
-            catch (System.Exception e) { UnityEngine.Debug.LogError("Mock Write Error: " + e.Message); }
+            try 
+            { 
+                File.AppendAllText(MockLogPath, logEntry); 
+            }
+            catch (System.Exception e) 
+            { 
+                UnityEngine.Debug.LogError("Mock Write Error: " + e.Message); 
+            }
 
-            if (arguments.Contains("login")) return ("User logged in.", "");
-            if (arguments.Contains("users -g")) return ("mockuser <mock@test.com> (Mock User) accessed...", "");
-
-            return ("Mock Success", "");
+            bool isReadOnly = arguments.Contains("users -g") || arguments.Contains("login");
+            
+            if (!isReadOnly)
+            {
+                return ("Mock Command Success (Logged Only)", "");
+            }
         }
 
         var startInfo = new ProcessStartInfo
