@@ -14,9 +14,16 @@ public class UserDeleter : MonoBehaviour
         public string Email;
     }
 
+    // New struct to track the action taken for the final log
+    private struct ProcessedUserEntry
+    {
+        public P4UserDetail User;
+        public string Action; // "Deleted" or "Skipped"
+    }
+
     [Header("UI References")]
     public TMP_InputField groupInput;
-    public Button fetchButton;
+    public ButtonController fetchButton;
     
     [Space(10)]
     public GameObject userDisplayGroup; 
@@ -24,18 +31,18 @@ public class UserDeleter : MonoBehaviour
     public TextMeshProUGUI fullNameLabel;     
     public TextMeshProUGUI emailLabel;        
     
-    public Button deleteButton;
-    public Button skipButton;
+    public ButtonController deleteButton;
+    public ButtonController skipButton;
 
     private List<P4UserDetail> usersToDelete = new List<P4UserDetail>();
-    private List<P4UserDetail> deletedUsersLog = new List<P4UserDetail>();
+    private List<ProcessedUserEntry> processedUsersLog = new List<ProcessedUserEntry>();
     private int currentUserIndex = -1;
 
     void Start()
     {
-        fetchButton.onClick.AddListener(OnFetchUsers);
-        deleteButton.onClick.AddListener(OnDelete);
-        skipButton.onClick.AddListener(OnSkip);
+        fetchButton.OnClick.AddListener(OnFetchUsers);
+        deleteButton.OnClick.AddListener(OnDelete);
+        skipButton.OnClick.AddListener(OnSkip);
         
         userDisplayGroup.SetActive(false); 
     }
@@ -49,20 +56,56 @@ public class UserDeleter : MonoBehaviour
             return;
         }
 
-        UIManager.Instance.AddLog($"Fetching users from group: {groupName}...");
-        var (output, error) = P4.RunCommand($"users -g {groupName}");
+        UIManager.Instance.AddLog($"Fetching group spec: {groupName}...");
+        
+        var (output, error) = P4.RunCommand($"group -o {groupName}");
 
-        if (!string.IsNullOrEmpty(error))
+        if (!string.IsNullOrEmpty(error) && !error.ToLower().Contains("group not found")) 
         {
-            UIManager.Instance.AddLog($"Error fetching users: {error}", true);
+            UIManager.Instance.AddLog($"Error fetching group: {error}", true);
             return;
         }
+
+        List<string> usernames = new List<string>();
+        bool inUsersSection = false;
+        var lines = output.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("Users:"))
+            {
+                inUsersSection = true;
+                continue;
+            }
+
+            if (inUsersSection)
+            {
+                if (!line.StartsWith("\t") && !line.StartsWith(" "))
+                {
+                    inUsersSection = false; 
+                    continue;
+                }
+                usernames.Add(line.Trim());
+            }
+        }
+
+        if (usernames.Count == 0)
+        {
+            UIManager.Instance.AddLog("No users found in this group.");
+            return;
+        }
+
+        UIManager.Instance.AddLog($"Found {usernames.Count} members. Fetching details...");
+        string userListStr = string.Join(" ", usernames);
+        
+        var (usersOut, usersErr) = P4.RunCommand($"users {userListStr}");
         
         usersToDelete.Clear();
-        deletedUsersLog.Clear();
-        var lines = output.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+        processedUsersLog.Clear();
         
-        foreach (var line in lines)
+        var userLines = usersOut.Split(new[] { '\n', '\r' }, System.StringSplitOptions.RemoveEmptyEntries);
+        
+        foreach (var line in userLines)
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
 
@@ -90,15 +133,14 @@ public class UserDeleter : MonoBehaviour
         
         if (usersToDelete.Count > 0)
         {
-            UIManager.Instance.AddLog($"Found {usersToDelete.Count} users.");
+            UIManager.Instance.AddLog($"Ready to process {usersToDelete.Count} users.");
             currentUserIndex = 0;
             DisplayCurrentUser();
             userDisplayGroup.SetActive(true);
         }
         else
         {
-            UIManager.Instance.AddLog("No users found in that group.");
-            userDisplayGroup.SetActive(false);
+            UIManager.Instance.AddLog("Could not parse user details.");
         }
     }
 
@@ -139,7 +181,7 @@ public class UserDeleter : MonoBehaviour
         else
         {
             UIManager.Instance.AddLog($"Successfully deleted {username}.");
-            deletedUsersLog.Add(user); 
+            processedUsersLog.Add(new ProcessedUserEntry { User = user, Action = "Deleted" });
         }
 
         currentUserIndex++;
@@ -150,7 +192,15 @@ public class UserDeleter : MonoBehaviour
     {
         if (currentUserIndex < 0 || currentUserIndex >= usersToDelete.Count) return;
 
-        UIManager.Instance.AddLog($"Skipped user: {usersToDelete[currentUserIndex].Username}");
+        P4UserDetail user = usersToDelete[currentUserIndex];
+        string username = user.Username;
+
+        UIManager.Instance.AddLog($"Skipped user: {username}");
+        
+        P4.LogMockEvent($"Skipped user: {username}");
+
+        processedUsersLog.Add(new ProcessedUserEntry { User = user, Action = "Skipped" });
+
         currentUserIndex++;
         DisplayCurrentUser();
     }
@@ -159,14 +209,17 @@ public class UserDeleter : MonoBehaviour
     {
         string logPath = Path.Combine(Application.persistentDataPath, "deleted_users_log.csv");
         var csvBuilder = new StringBuilder();
-        csvBuilder.AppendLine("Username,FullName,Email"); 
         
-        foreach (var user in deletedUsersLog)
+        csvBuilder.AppendLine("Username,FullName,Email,Action"); 
+        
+        foreach (var entry in processedUsersLog)
         {
-            csvBuilder.AppendLine($"{user.Username},\"{user.FullName}\",{user.Email}");
+            csvBuilder.AppendLine($"{entry.User.Username},\"{entry.User.FullName}\",{entry.User.Email},{entry.Action}");
         }
         
         File.WriteAllText(logPath, csvBuilder.ToString());
-        UIManager.Instance.AddLog($"Log of deleted users saved to {logPath}");
+        UIManager.Instance.AddLog($"Log of processed users saved to {logPath}");
+
+        Application.OpenURL(Path.GetDirectoryName(logPath));
     }
 }

@@ -1,7 +1,9 @@
 // Filename: UIManager.cs
 using System.Collections.Generic;
 using DG.Tweening;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIManager : MonoBehaviour
 {
@@ -27,10 +29,35 @@ public class UIManager : MonoBehaviour
     [SerializeField] RectTransform _userCreationPanel;
     [SerializeField] RectTransform _userDeleterPanel;
     [SerializeField] List<AppLogger> _loggers; 
+    [SerializeField] Image _mockModeButtonImage;
+    [SerializeField] Color _mockModeOnColor;
+    [SerializeField] Color _mockModeOffColor;
+    [SerializeField] TextMeshProUGUI _mockModeButtonText;
 
     void Start()
     {
         ShowMainMenu();
+        UpdateMockModeButtonColor();
+    }
+
+    public void ToggleMockMode()
+    {
+        P4.SetMockMode(!P4.IsMockMode);
+        UpdateMockModeButtonColor();
+        AddLog($"Mock Mode {(P4.IsMockMode ? "Enabled" : "Disabled")}");
+        
+    }
+
+    void UpdateMockModeButtonColor()
+    {
+        if (_mockModeButtonImage != null)
+        {
+            _mockModeButtonImage.color = P4.IsMockMode ? _mockModeOnColor : _mockModeOffColor;
+        }
+        if (_mockModeButtonText != null)
+        {
+            _mockModeButtonText.text = P4.IsMockMode ? "Mock Mode: ON" : "Mock Mode: OFF";
+        }
     }
 
     public void AddLog(string message, bool isError = false)

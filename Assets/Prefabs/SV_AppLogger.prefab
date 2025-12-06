@@ -539,8 +539,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 241.5, y: -16.625}
-  m_SizeDelta: {x: 463, y: 0}
+  m_AnchoredPosition: {x: 281.5, y: -16.625}
+  m_SizeDelta: {x: 543, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3855391687526317228
 CanvasRenderer:
@@ -570,7 +570,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: ' <b><color=#C0FFBC><- PERFORCE APP LOGGER -></b></color>'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0bec6d5d8f184464baac0e7d646ffa52, type: 2}
   m_sharedMaterial: {fileID: -3121738768580969506, guid: 0bec6d5d8f184464baac0e7d646ffa52, type: 2}

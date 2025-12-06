@@ -34,10 +34,10 @@ public class UserCreator : MonoBehaviour
     public TMP_InputField passwordInput; 
 
     [Header("Buttons")]
-    public Button loadCSVButton;
-    public Button continueButton;
-    public Button skipButton;
-    public Button editButton; 
+    public ButtonController loadCSVButton;
+    public ButtonController continueButton;
+    public ButtonController skipButton;
+    public ButtonController editButton; 
     
     private List<UserData> usersToCreate = new List<UserData>();
     private List<CreatedUserEntry> successLog = new List<CreatedUserEntry>(); // Store successful creations here
@@ -46,10 +46,10 @@ public class UserCreator : MonoBehaviour
 
     void Start()
     {
-        loadCSVButton.onClick.AddListener(OnLoadCSV);
-        continueButton.onClick.AddListener(OnContinue);
-        skipButton.onClick.AddListener(OnSkip);
-        editButton.onClick.AddListener(OnEdit); 
+        loadCSVButton.OnClick.AddListener(OnLoadCSV);
+        continueButton.OnClick.AddListener(OnContinue);
+        skipButton.OnClick.AddListener(OnSkip);
+        editButton.OnClick.AddListener(OnEdit); 
         
         csvPath = Path.Combine(Application.persistentDataPath, "perforce_users.csv");
         
@@ -234,9 +234,9 @@ public class UserCreator : MonoBehaviour
     private void SetDisplayActive(bool isActive)
     {
         usernameInput.transform.parent.gameObject.SetActive(isActive);
-        continueButton.interactable = isActive;
-        skipButton.interactable = isActive;
-        editButton.interactable = isActive;
+        continueButton.Interactable = isActive;
+        skipButton.Interactable = isActive;
+        editButton.Interactable = isActive;
     }
 
     private void SetFieldsInteractable(bool isInteractable)

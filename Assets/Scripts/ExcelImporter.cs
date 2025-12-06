@@ -1,6 +1,5 @@
 using UnityEngine;
 using TMPro;
-using UnityEngine.UI;
 using System.IO;
 using System.Text;
 using OfficeOpenXml; 
@@ -9,14 +8,14 @@ using SFB;
 public class ExcelImporter : MonoBehaviour
 {
     [Header("UI References")]
-    public Button selectFileButton;
+    public ButtonController selectFileButton;
     public TextMeshProUGUI statusLabel;
     
     private string outputCsvPath;
 
     void Start()
-    {        
-        selectFileButton.onClick.AddListener(OnSelectFile);
+    {
+        selectFileButton.OnClick.AddListener(OnSelectFile); 
         outputCsvPath = Path.Combine(Application.persistentDataPath, "perforce_users.csv");
         statusLabel.text = $"Ready. Converted file will be saved to:\n{outputCsvPath}";
     }
