@@ -24,16 +24,16 @@ public class ButtonController : MonoBehaviour, IPointerEnterHandler, IPointerExi
     {
         get { return _onClick; }
     }
-    bool interactable = true;
+    bool _interactable = true;
     public bool Interactable
     {
-        get { return interactable; }
+        get { return _interactable; }
         set { 
-            interactable = value; 
+            _interactable = value; 
             if (_buttonImage != null)
             {
-                _buttonImage.raycastTarget = interactable;
-                _buttonImage.color = interactable ? Color.white : Color.gray;
+                _buttonImage.raycastTarget = _interactable;
+                _buttonImage.color = _interactable ? Color.white : Color.gray;
             }
         }
     }
@@ -49,6 +49,11 @@ public class ButtonController : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     private void Awake() {
         _buttonRectTransform = GetComponent<RectTransform>();
+    }
+
+    private void Start()
+    {
+        _buttonRectTransform.localScale = Vector3.one;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -68,11 +73,13 @@ public class ButtonController : MonoBehaviour, IPointerEnterHandler, IPointerExi
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        _buttonRectTransform.DOScale(_hoverScale, _animationDuration / 2).SetEase(_easeType);
-
-        if (RectTransformUtility.RectangleContainsScreenPoint(_buttonRectTransform, eventData.position, eventData.enterEventCamera))
+        var clickedOn = RectTransformUtility.RectangleContainsScreenPoint(_buttonRectTransform, eventData.position, eventData.enterEventCamera);
+        _buttonRectTransform.DOScale(Vector3.one, _animationDuration / 2).SetEase(_easeType).OnComplete(() =>
         {
-            _onClick?.Invoke();
-        }
+            if (_interactable && clickedOn)
+            {
+                _onClick?.Invoke();
+            }
+        });
     }
 }

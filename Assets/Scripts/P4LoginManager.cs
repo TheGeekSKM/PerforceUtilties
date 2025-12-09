@@ -9,13 +9,13 @@ public class P4LoginManager : MonoBehaviour
     [SerializeField] TMP_InputField serverInput;
     [SerializeField] TMP_InputField userInput;
     [SerializeField] TMP_InputField passwordInput;
-    [SerializeField] Button loginButton;
+    [SerializeField] ButtonController loginButton;
     [SerializeField] TextMeshProUGUI statusLabel;
 
 
     void Start() 
     {
-        loginButton.onClick.AddListener(OnLoginAttempt);
+        loginButton.OnClick.AddListener(OnLoginAttempt);
     }
 
     void OnLoginAttempt()
