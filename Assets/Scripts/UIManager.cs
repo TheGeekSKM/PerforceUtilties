@@ -22,17 +22,22 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    [Header("UI Panels")]
     [SerializeField] RectTransform _rootPanel;
     [SerializeField] RectTransform _mainMenuPanel;
     [SerializeField] RectTransform _loginPanel;
     [SerializeField] RectTransform _excelImporterPanel;
     [SerializeField] RectTransform _userCreationPanel;
     [SerializeField] RectTransform _userDeleterPanel;
-    [SerializeField] List<AppLogger> _loggers; 
+    
+    [Header("Mock Mode UI")]
     [SerializeField] Image _mockModeButtonImage;
     [SerializeField] Color _mockModeOnColor;
     [SerializeField] Color _mockModeOffColor;
     [SerializeField] TextMeshProUGUI _mockModeButtonText;
+
+    [Header("Loggers")]
+    [SerializeField] List<AppLogger> _loggers; 
 
     void Start()
     {

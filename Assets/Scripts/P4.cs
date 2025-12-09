@@ -75,7 +75,7 @@ public static class P4
             process.WaitForExit();
 
             if (!string.IsNullOrEmpty(output)) UnityEngine.Debug.Log($"P4 Output: {output}");
-            if (!string.IsNullOrEmpty(error)) UnityEngine.Debug.LogError($"P4 Error: {error}");
+            if (!string.IsNullOrEmpty(error)) UnityEngine.Debug.LogWarning($"P4 Error: {error}");
 
             return (output, error);
         }

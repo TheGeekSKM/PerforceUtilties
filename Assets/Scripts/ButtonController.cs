@@ -43,6 +43,7 @@ public class ButtonController : MonoBehaviour, IPointerEnterHandler, IPointerExi
         if (_buttonTMPro != null)
         {
             _buttonTMPro.text = _buttonText;
+            _buttonTMPro.raycastTarget = false;
         }
     }
 
